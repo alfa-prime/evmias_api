@@ -1,7 +1,7 @@
 #app/core/lifespan.py
 import httpx
 from fastapi import FastAPI
-from app.core.logger import logger
+from app.core.logger_config import logger
 
 
 async def init_httpx_client(app: FastAPI):

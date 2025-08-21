@@ -1,7 +1,9 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+
 from app.core import HTTPXClient, get_http_service
+from app.service.cookies.cookies import get_new_cookies
 
 router = APIRouter(prefix="/health", tags=["Health check"])
 
@@ -11,8 +13,12 @@ async def ping():
     return {"success": True, "status": "ok", "message": "PONG!"}
 
 
-
 @router.get(path="/client", summary="Check HTTP client", description="Health check")
 async def client(http_service: Annotated[HTTPXClient, Depends(get_http_service)]):
     response = await http_service.fetch(url="https://httpbin.org/get")
     return response.get("json")
+
+
+@router.get(path="/test")
+async def test(http_service: Annotated[HTTPXClient, Depends(get_http_service)]):
+    return await get_new_cookies(http_service)

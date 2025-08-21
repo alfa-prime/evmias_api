@@ -6,9 +6,7 @@ from app.core import (
     init_httpx_client,
     shutdown_httpx_client,
 )
-from app.route import (
-    health_router,
-)
+from app.route import health_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
