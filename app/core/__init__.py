@@ -1,4 +1,4 @@
-from .client import HTTPXClient
+from .http_client import HTTPXClient
 from .config import get_settings
 from .dependencies import get_http_service
 from .lifespan import init_httpx_client, shutdown_httpx_client
