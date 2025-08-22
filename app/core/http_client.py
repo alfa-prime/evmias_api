@@ -13,21 +13,21 @@ from app.core.logger_config import logger
 settings = get_settings()
 
 
-def _is_auth_error(response: Dict[str, Any]) -> bool:
-    """Определяет, является ли ответ ошибкой авторизации."""
-    status_code = response.get("status_code")
-
-    if status_code in (401, 403):
-        logger.warning(f"AUTH: Explicit authorization error detected (status: {status_code}).")
-        return True
-
-    if status_code == 200:
-        response_json = response.get("json")
-        if not response_json:
-            logger.warning("AUTH: Detected 200 OK with empty or missing JSON, signaling an expired session.")
-            return True
-
-    return False
+# def _is_auth_error(response: Dict[str, Any]) -> bool:
+#     """Определяет, является ли ответ ошибкой авторизации."""
+#     status_code = response.get("status_code")
+#
+#     if status_code in (401, 403):
+#         logger.warning(f"[AUTH] Explicit authorization error detected (status: {status_code}).")
+#         return True
+#
+#     if status_code == 200:
+#         response_json = response.get("json")
+#         if not response_json:
+#             logger.warning("[AUTH] Detected 200 OK with empty or missing JSON, signaling an expired session.")
+#             return True
+#
+#     return False
 
 
 def _is_retryable_exception(exception) -> bool:
@@ -50,6 +50,22 @@ class HTTPXClient:
         self.client = client
         self.auth_lock = auth_lock
         self.reauth_func = reauth_func
+
+    def _is_auth_error(self, response: Dict[str, Any]) -> bool: # noqa
+        """Определяет, является ли ответ ошибкой авторизации."""
+        status_code = response.get("status_code")
+
+        if status_code in (401, 403):
+            logger.warning(f"[HTTPX] Explicit authorization error detected (status: {status_code}).")
+            return True
+
+        if status_code == 200:
+            response_json = response.get("json")
+            if not response_json:
+                logger.warning("[HTTPX] Detected 200 OK with empty or missing JSON, signaling an expired session.")
+                return True
+
+        return False
 
     def _process_response(self, response: Response, url: str) -> dict:  # noqa
         json_data = None
@@ -111,17 +127,17 @@ class HTTPXClient:
         )
 
         # Если это не ошибка авторизации, все хорошо, возвращаем результат
-        if not _is_auth_error(response_dict):
+        if not self._is_auth_error(response_dict):
             return response_dict
 
-        logger.warning(f"Authorization error detected for {method} {url}. Attempting re-authentication.")
+        logger.warning(f"[HTTPX] Authorization error detected for {method} {url}. Attempting re-authentication.")
 
         async with self.auth_lock:
-            logger.info("Acquired auth lock. Proceeding with re-authentication.")
+            logger.info("[HTTPX] Acquired auth lock. Proceeding with re-authentication.")
             await self.reauth_func(self)
-            logger.info("Re-authentication successful.")
+            logger.info("[HTTPX] Re-authentication successful.")
 
-        logger.info(f"Retrying original request to {method} {url}.")
+        logger.info(f"[HTTPX] Retrying original request to {method} {url}.")
         # Вторая и последняя попытка после переавторизации
         final_response_dict = await self._execute_fetch(
             url=url, method=method, raise_for_status=raise_for_status, **kwargs
@@ -150,7 +166,6 @@ class HTTPXClient:
         # Извлекаем специфичные для fetch аргументы из kwargs, чтобы передать их явно
         method = kwargs.pop('method', 'GET')
         url = kwargs.pop('url')
-        follow_redirects = kwargs.pop('follow_redirects', True)
 
         # Мы отключаем `raise_for_status` на уровне httpx, чтобы наша логика
         # в `fetch` могла увидеть ответ 401 и принять решение.
@@ -158,7 +173,6 @@ class HTTPXClient:
             method=method,
             url=url,
             timeout=30.0,
-            follow_redirects=True,
             **kwargs
         )
 
@@ -166,7 +180,7 @@ class HTTPXClient:
 
         # Если это НЕ ошибка авторизации, НО это другая ошибка (404, 500),
         # и вызывающий код просил возбудить исключение, мы делаем это вручную.
-        if raise_for_status and not _is_auth_error(processed_result) and response.status_code >= 400:
+        if raise_for_status and not self._is_auth_error(processed_result) and response.status_code >= 400:
             response.raise_for_status()
 
         return processed_result

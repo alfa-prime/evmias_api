@@ -1,4 +1,4 @@
-#app/service/cookies/cookies.py
+#app/service/auth/auth.py
 from app.core import HTTPXClient, get_settings
 from app.core.logger_config import logger
 from fastapi import HTTPException, status
@@ -17,12 +17,12 @@ async def warmup_session_and_fetch_initial_cookies(http_client: HTTPXClient) -> 
     )
     status_code = response.get("status_code")
     if status_code != 200:
-        logger.error(f"AUTH: Failed to fetch initial cookies, status code: {status_code}, text: {response}")
+        logger.error(f"[AUTH] Failed to fetch initial cookies, status code: {status_code}, text: {response}")
         raise HTTPException(
             status_code=status_code,
             detail="Failed to fetch initial cookies"
         )
-    logger.info(f"AUTH: Successfully fetched initial cookies.")
+    logger.info(f"[AUTH] Successfully fetched initial cookies.")
 
 
 async def authorize_session(http_client: HTTPXClient) -> None:
@@ -58,16 +58,16 @@ async def authorize_session(http_client: HTTPXClient) -> None:
 
     if response['status_code'] != 200 or "true" not in response.get("text", ""):
         logger.error(
-            f"AUTH: Failed to authorize user, "
+            f"[AUTH] Failed to authorize user, "
             f"status code: {response['status_code']}, "
             f"text: {response.get('text', '')}"
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="AUTH: Failed to authorize user"
+            detail="[AUTH] Failed to authorize user"
         )
 
-    logger.info("AUTH: Successfully authorized user.")
+    logger.info("[AUTH] Successfully authorized user.")
 
 
 async def perform_re_authentication(http_client: HTTPXClient):
