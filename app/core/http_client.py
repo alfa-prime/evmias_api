@@ -13,23 +13,6 @@ from app.core.logger_config import logger
 settings = get_settings()
 
 
-# def _is_auth_error(response: Dict[str, Any]) -> bool:
-#     """Определяет, является ли ответ ошибкой авторизации."""
-#     status_code = response.get("status_code")
-#
-#     if status_code in (401, 403):
-#         logger.warning(f"[AUTH] Explicit authorization error detected (status: {status_code}).")
-#         return True
-#
-#     if status_code == 200:
-#         response_json = response.get("json")
-#         if not response_json:
-#             logger.warning("[AUTH] Detected 200 OK with empty or missing JSON, signaling an expired session.")
-#             return True
-#
-#     return False
-
-
 def _is_retryable_exception(exception) -> bool:
     """Определяет, стоит ли повторять запрос при этой ошибке."""
     # Повторяем при ошибках сети/сервера/таймаута/статуса 5xx
@@ -140,7 +123,11 @@ class HTTPXClient:
         logger.info(f"[HTTPX] Retrying original request to {method} {url}.")
         # Вторая и последняя попытка после переавторизации
         final_response_dict = await self._execute_fetch(
-            url=url, method=method, raise_for_status=raise_for_status, **kwargs
+            url=url,
+            method=method,
+            raise_for_status=raise_for_status,
+            follow_redirects=follow_redirects,
+            **kwargs
         )
 
         return final_response_dict
@@ -156,24 +143,25 @@ class HTTPXClient:
     )
     async def _execute_fetch(
             self,
+            url: str,
+            method: str,
             raise_for_status: bool,
+            follow_redirects: bool,
             **kwargs
     ) -> Dict[str, Any]:
         """
         Приватный метод-исполнитель. Выполняет один HTTP-запрос,
         обрабатывает ответ и сетевые ошибки (с помощью Tenacity).
         """
-        # Извлекаем специфичные для fetch аргументы из kwargs, чтобы передать их явно
-        method = kwargs.pop('method', 'GET')
-        url = kwargs.pop('url')
-
         # Мы отключаем `raise_for_status` на уровне httpx, чтобы наша логика
         # в `fetch` могла увидеть ответ 401 и принять решение.
         response: Response = await self.client.request(
             method=method,
             url=url,
             timeout=30.0,
+            follow_redirects=follow_redirects,
             **kwargs
+
         )
 
         processed_result = self._process_response(response, url)

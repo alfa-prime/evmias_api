@@ -12,6 +12,7 @@ async def warmup_session_and_fetch_initial_cookies(http_client: HTTPXClient) -> 
     response = await http_client._execute_fetch( # noqa
         url = settings.BASE_URL,
         params=params,
+        method="GET",
         raise_for_status=False,
         follow_redirects=True, # Follow redirects to get the cookies
     )
@@ -53,7 +54,8 @@ async def authorize_session(http_client: HTTPXClient) -> None:
         headers=headers,
         params=params,
         data=data,
-        raise_for_status=False
+        raise_for_status=False,
+        follow_redirects=False,
     )
 
     if response['status_code'] != 200 or "true" not in response.get("text", ""):
