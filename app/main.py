@@ -6,7 +6,7 @@ from app.core import (
     init_httpx_client,
     shutdown_httpx_client,
 )
-from app.route import health_router
+from app.route import health_router, proxy_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -21,14 +21,27 @@ async def lifespan(app: FastAPI):  # noqa
 
 tags_metadata = [
     {"name": "Health check", "description": "checks if the service is running"},
+    {
+        "name": "EVMIAS proxy",
+        "description": "🚀 Универсальный шлюз для запросов к EVMIAS API",
+    },
 ]
 
 app = FastAPI(
     lifespan=lifespan,
     openapi_tags=tags_metadata,
     title="MIS Synchronization API",
-    description="API gateway for extracting and synchronizing medical data from EVMIAS to other MIS.",
+    description="""
+    API-шлюз для синхронизации медицинских данных между ЕВМИАС и другими МИС.
+
+    Основные возможности:
+    *   Автоматическое управление сессией: Сервис самостоятельно выполняет аутентификацию и поддерживает сессию активной.
+    *   Универсальный прокси: Позволяет выполнять произвольные запросы к API ЕВМИАС через единый эндпоинт `/proxy/`.
+    *   Централизованное логирование и обработка ошибок.
+    """,
 )
+app.include_router(proxy_router)
 app.include_router(health_router)
+
 
 

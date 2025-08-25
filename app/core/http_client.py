@@ -89,7 +89,7 @@ class HTTPXClient:
     @log_and_catch(debug=settings.DEBUG_HTTP)
     async def fetch(
             self,
-            url: str,
+            url: str = "/",
             method: str = "GET",
             raise_for_status: bool = True,
             **kwargs

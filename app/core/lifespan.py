@@ -4,11 +4,27 @@ import asyncio
 import httpx
 from fastapi import FastAPI
 from app.core.logger_config import logger
+from app.core import get_settings
+
+
 
 
 async def init_httpx_client(app: FastAPI):
+    settings = get_settings()
+
+    base_headers = {
+        "Origin": settings.BASE_HEADERS_ORIGIN_URL,
+        "Referer": settings.BASE_HEADERS_REFERER_URL,
+        "X-Requested-With": "XMLHttpRequest",
+    }
+
     try:
-        base_client = httpx.AsyncClient(timeout=30.0, verify=False)  # TODO: убрать verify=False
+        base_client = httpx.AsyncClient(
+            base_url=settings.BASE_URL,
+            headers=base_headers,
+            timeout=30.0,
+            verify=False  # TODO: убрать verify=False
+        )
         app.state.http_client = base_client
         app.state.auth_lock = asyncio.Lock()
         logger.info("Base HTTPX client and auth lock initialized.")

@@ -10,7 +10,7 @@ async def warmup_session_and_fetch_initial_cookies(http_client: HTTPXClient) -> 
     """Get first part of cookies."""
     params = {"c": "portal", "m": "promed", "from": "promed" }
     response = await http_client._execute_fetch( # noqa
-        url = settings.BASE_URL,
+        url="/",
         params=params,
         method="GET",
         raise_for_status=False,
@@ -28,12 +28,6 @@ async def warmup_session_and_fetch_initial_cookies(http_client: HTTPXClient) -> 
 
 async def authorize_session(http_client: HTTPXClient) -> None:
     """Authorizes the user and adds the login to cookies."""
-    headers = {
-        "Origin": settings.BASE_HEADERS_ORIGIN_URL,
-        "Referer": settings.BASE_HEADERS_REFERER_URL,
-        "X-Requested-With": "XMLHttpRequest",
-    }
-
     params = {
         "c": "main",
         "m": "index",
@@ -49,9 +43,8 @@ async def authorize_session(http_client: HTTPXClient) -> None:
     }
 
     response = await http_client._execute_fetch( # noqa
-        url = settings.BASE_URL,
+        url="/",
         method="POST",
-        headers=headers,
         params=params,
         data=data,
         raise_for_status=False,
