@@ -1,3 +1,4 @@
+from .decorators import log_and_catch, route_handler
 from .http_client import HTTPXClient
 from .config import get_settings
 from .dependencies import get_http_service
@@ -11,4 +12,6 @@ __all__ = [
     "shutdown_httpx_client",
     "get_http_service",
     "get_settings",
+    "route_handler",
+    "log_and_catch",
 ]

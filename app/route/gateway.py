@@ -3,13 +3,15 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
-from app.core import HTTPXClient, get_http_service
+from app.core import HTTPXClient, get_http_service, route_handler ,get_settings
 from app.model.gateway import GatewayRequest
-from app.service import fetch_request  # Теперь импортируем только fetch_request
+from app.service import fetch_request
 
+
+settings = get_settings()
 router = APIRouter(prefix="/gateway", tags=["EVMIAS gateway"])
 
-
+@route_handler(debug=settings.DEBUG_ROUTE)
 @router.post(
     path="/",
     summary="Выполнить запрос к ЕВМИАС и вернуть чистый JSON",

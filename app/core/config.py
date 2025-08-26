@@ -9,10 +9,6 @@ class Settings(BaseSettings):
     EVMIAS_LOGIN: str
     EVMIAS_PASSWORD: str
 
-    EVMIAS_GWT_PERMUTATION: str
-    EVMIAS_GWT: str
-    EVMIAS_GWT_MODULE_BASE: str
-
     LOGS_LEVEL: str = "INFO"
     DEBUG_HTTP: bool = False
 

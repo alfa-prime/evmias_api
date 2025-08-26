@@ -1,9 +1,9 @@
 import functools
 import time
 import traceback
-from typing import Callable, Awaitable, TypeVar, ParamSpec
+from typing import Callable, Awaitable, TypeVar, ParamSpec, Dict, Type, Any
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 
 from app.core.logger_config import logger
 from app.core.config import get_settings
@@ -120,4 +120,100 @@ def log_and_catch(debug: bool = settings.DEBUG_HTTP) -> Callable[
 
         return wrapper
 
+    return decorator
+
+
+def route_handler(debug: bool = True, custom_errors: Dict[Type[Exception], int] = None) -> Callable[
+    ..., Awaitable[Any]]:
+    """Декоратор для логирования и обработки ошибок в роутах FastAPI.
+
+    Логирует выполнение роута и обрабатывает исключения с кастомными статус-кодами.
+
+    Args:
+        debug (bool): Включает подробное логирование аргументов, результата и трейсов.
+        custom_errors (Dict[Type[Exception], int], optional): Словарь исключений и соответствующих статус-кодов.
+
+    Returns:
+        Callable[..., Awaitable[Any]]: Обернутая функция.
+
+    Example:
+        ```python
+        @route_handler(debug=True, custom_errors={ValueError: 400})
+        async def my_route(request: Request):
+            raise ValueError("Неверные данные")
+        ```
+    """
+    # Список стандартных ошибок с соответствующими HTTP-статусами
+    DEFAULT_CUSTOM_ERRORS = {
+        ValueError: status.HTTP_400_BAD_REQUEST,                # Невалидные данные
+        TypeError: status.HTTP_400_BAD_REQUEST,                 # Неправильный тип
+        KeyError: status.HTTP_400_BAD_REQUEST,                  # Отсутствие ключа
+        IndexError: status.HTTP_400_BAD_REQUEST,                # Выход за пределы списка
+        AttributeError: status.HTTP_400_BAD_REQUEST,            # Обращение к несуществующему атрибуту
+        PermissionError: status.HTTP_403_FORBIDDEN,             # Нет прав
+        FileNotFoundError: status.HTTP_404_NOT_FOUND,           # Ресурс не найден
+        TimeoutError: status.HTTP_504_GATEWAY_TIMEOUT,          # Таймаут
+        ConnectionError: status.HTTP_503_SERVICE_UNAVAILABLE,   # Ошибка соединения
+        NotImplementedError: status.HTTP_501_NOT_IMPLEMENTED,   # Не реализовано
+    }
+    # Объединяем стандартные ошибки с пользовательскими, если они есть
+    effective_errors = DEFAULT_CUSTOM_ERRORS.copy()
+    if custom_errors:
+        effective_errors.update(custom_errors)
+
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Извлекаем данные запроса или используем заглушки
+            request = kwargs.get("request", None)
+            func_name = func.__name__
+            route_path = request.url.path if isinstance(request, Request) else func_name
+            method = request.method if isinstance(request, Request) else "N/A"
+            # Логирование перед выполнением роута
+            if debug:
+                logger.debug(f"[ROUTE] {method} {route_path} — старт")
+                if args:
+                    logger.debug(f"[ROUTE] args: {str(args)[:300]}")
+                if kwargs:
+                    kwargs_preview = {k: str(v)[:50] + "..." if isinstance(v, str) and len(str(v)) > 50 else v for k, v
+                                      in kwargs.items()}
+                    logger.debug(f"[ROUTE] kwargs: {kwargs_preview}")
+
+            # Засекаем время выполнения
+            start_time = time.perf_counter()
+
+            try:
+                # Выполняем роут
+                result = await func(*args, **kwargs)
+                duration = round(time.perf_counter() - start_time, 2)
+                # Логирование успешного выполнения
+                if debug:
+                    logger.debug(f"[ROUTE] {method} {route_path} — успех за {duration}s")
+                    result_info = f"type={type(result).__name__}, len={len(result) if hasattr(result, '__len__') else 'N/A'}"
+                    logger.debug(f"[ROUTE] результат: {result_info}")
+                return result
+
+            except HTTPException as e:
+                # Логируем HTTP-ошибки и пробрасываем дальше
+                logger.warning(f"[ROUTE] {method} {route_path} — HTTP ошибка: {e.status_code} - {e.detail}")
+                raise
+
+            except Exception as e:
+                # Обработка непредвиденных ошибок
+                duration = round(time.perf_counter() - start_time, 2)
+                tb = traceback.extract_tb(e.__traceback__)
+                last_frame = tb[-1] if tb else None
+                lineno = last_frame.lineno if last_frame else "?"
+                logger.error(
+                    f"[ROUTE] ❌ Ошибка в {func_name} (строка {lineno}) — {method} {route_path} за {duration}s: {e}")
+                if debug:
+                    logger.debug(f"[ROUTE] Трейс:\n{''.join(traceback.format_tb(e.__traceback__))[:1000]}")
+
+                # Пробрасываем ошибку с соответствующим статус-кодом
+                status_code = effective_errors.get(type(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+                raise HTTPException(
+                    status_code=status_code,
+                    detail=str(e)
+                )
+        return wrapper
     return decorator

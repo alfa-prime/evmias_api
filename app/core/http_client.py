@@ -58,24 +58,24 @@ class HTTPXClient:
             try:
                 if response.content:
                     json_data = response.json()
-                    logger.debug(f"Successfully parsed JSON (application/json) response for {url}")
+                    logger.debug(f"[HTTPX] Successfully parsed JSON (application/json) response for {url}")
                 else:
-                    logger.debug(f"Content-Type 'application/json', but response body is empty for {url}")
+                    logger.debug(f"[HTTPX] Content-Type 'application/json', but response body is empty for {url}")
             except json.JSONDecodeError as e:
                 logger.warning(
-                    f"Failed to decode JSON (application/json) from response {url}: {e}. Text: {response.text[:200]}...")
+                    f"[HTTPX] Failed to decode JSON (application/json) from response {url}: {e}. Text: {response.text[:200]}...")
 
         elif "text/html" in content_type:
             if response.text:
                 try:
                     json_data = json.loads(response.text)
-                    logger.debug(f"Successfully parsed JSON (из text/html) response for {url}")
+                    logger.debug(f"[HTTPX] Successfully parsed JSON (из text/html) response for {url}")
                 except json.JSONDecodeError:
-                    logger.debug(f"Content-Type 'text/html' for {url}, but response body is not valid JSON.")
+                    logger.debug(f"[HTTPX] Content-Type 'text/html' for {url}, but response body is not valid JSON.")
             else:
-                logger.debug(f"Content-Type 'text/html' for {url}, but response body is empty.")
+                logger.debug(f"[HTTPX] Content-Type 'text/html' for {url}, but response body is empty.")
         else:
-            logger.debug(f"Content-Type '{content_type}' for {url}. JSON parsing skipped")
+            logger.debug(f"[HTTPX] Content-Type '{content_type}' for {url}. JSON parsing skipped")
 
         return {
             "status_code": response.status_code,
