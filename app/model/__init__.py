@@ -1,6 +1,6 @@
-from .proxy import ProxyRequest
+from .gateway import GatewayRequest
 
 
 __all__ = [
-    "ProxyRequest",
+    "GatewayRequest",
 ]

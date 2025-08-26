@@ -6,7 +6,7 @@ from app.core import (
     init_httpx_client,
     shutdown_httpx_client,
 )
-from app.route import health_router, proxy_router
+from app.route import health_router, gateway_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):  # noqa
 tags_metadata = [
     {"name": "Health check", "description": "checks if the service is running"},
     {
-        "name": "EVMIAS proxy",
+        "name": "EVMIAS gateway",
         "description": "🚀 Универсальный шлюз для запросов к EVMIAS API",
     },
 ]
@@ -40,7 +40,7 @@ app = FastAPI(
     *   Централизованное логирование и обработка ошибок.
     """,
 )
-app.include_router(proxy_router)
+app.include_router(gateway_router)
 app.include_router(health_router)
 
 

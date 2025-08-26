@@ -8,7 +8,7 @@ class RequestParams(BaseModel):
     m: str = Field(..., description="Имя вызываемого метода в контроллере.", examples=["getCurrentDateTime"])
 
 
-class ProxyRequest(BaseModel):
+class GatewayRequest(BaseModel):
     """
     Model for universal proxy request for EVMIAS api
     """

@@ -1,7 +1,7 @@
 from .health import router as health_router
-from .proxy import router as proxy_router
+from .gateway import router as gateway_router
 
 __all__ = [
-    "proxy_router",
+    "gateway_router",
     "health_router",
 ]
