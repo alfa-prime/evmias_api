@@ -1,19 +1,35 @@
-#app/route/proxy.py
-from typing import Annotated
+# app/route/gateway.py
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
 
 from app.core import HTTPXClient, get_http_service
 from app.model.gateway import GatewayRequest
-from app.service import fetch_request
+from app.service import fetch_request  # Теперь импортируем только fetch_request
 
 router = APIRouter(prefix="/gateway", tags=["EVMIAS gateway"])
 
 
-@router.post(path="/")
+@router.post(
+    path="/",
+    summary="Выполнить запрос к ЕВМИАС и вернуть чистый JSON",
+    description="""
+    Принимает описание запроса и выполняет его к API ЕВМИАС.
+
+    - В случае успеха возвращает JSON-ответ от ЕВМИАС.
+    - В случае, если от ЕВМИАС не удалось получить валидный JSON 
+      (например, из-за ошибки сессии), возвращает ошибку 502 Bad Gateway.
+
+    Дальнейшая обработка ошибок бизнес-логики (например, "пациент не найден")
+    остается на стороне клиента, вызывающего этот эндпоинт.
+    """
+)
 async def request(
         payload: GatewayRequest,
         http_service: Annotated[HTTPXClient, Depends(get_http_service)]
-):
-    response = await fetch_request(payload, http_service)
-    return response
+) -> Any:
+    # Просто вызываем сервис и возвращаем то, что он отдал.
+    # Если fetch_request вызовет HTTPException, FastAPI его перехватит
+    # и вернет клиенту корректный ответ с ошибкой.
+    json_response = await fetch_request(payload, http_service)
+    return json_response

@@ -1,4 +1,5 @@
 #app/service/proxy/proxy.py
+from fastapi import HTTPException
 from app.core import HTTPXClient
 from app.model import GatewayRequest
 
@@ -14,4 +15,19 @@ async def fetch_request(
         data=payload.data,
         raise_for_status=False
     )
-    return response
+
+    response_json = response.get("json")
+
+    if not response_json:
+        # Это единственная ошибка, за которую отвечает этот слой.
+        # Она означает "Не удалось установить связь и получить данные".
+        raise HTTPException(
+            status_code=502,  # Bad Gateway: "Мы, как шлюз, не смогли получить ответ от сервера за нами"
+            detail={
+                "error": "Failed to get a valid JSON response from EVMIAS",
+                "upstream_status_code": response.get("status_code"),
+                "upstream_response_text": response.get("text")
+            }
+        )
+
+    return response_json

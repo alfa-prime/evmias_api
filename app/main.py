@@ -1,6 +1,7 @@
 #main.py
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core import (
     logger,
     init_httpx_client,
@@ -40,6 +41,18 @@ app = FastAPI(
     *   Централизованное логирование и обработка ошибок.
     """,
 )
+
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,  # noqa
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Разрешить все методы (GET, POST и т.д.)
+    allow_headers=["*"], # Разрешить все заголовки
+)
+
 app.include_router(gateway_router)
 app.include_router(health_router)
 
