@@ -8,6 +8,8 @@ from app.core import (
     logger,
     init_httpx_client,
     shutdown_httpx_client,
+    init_redis_client,
+    shutdown_redis_client,
 )
 from app.route import gateway_router
 
@@ -16,9 +18,11 @@ from app.route import gateway_router
 async def lifespan(app: FastAPI):  # noqa
     logger.info("Starting application...")
     await init_httpx_client(app)
+    await init_redis_client(app)
     logger.info("Initialization completed.")
     yield
     logger.info("Shutting down application...")
+    await shutdown_redis_client(app)
     await shutdown_httpx_client(app)
     logger.info("Resources released.")
 

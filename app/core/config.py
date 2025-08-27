@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     DEBUG_HTTP: bool = False
     DEBUG_ROUTE: bool = False
 
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_COOKIES_KEY: str
+    REDIS_COOKIES_TTL: int
+
     GATEWAY_API_KEY: str
 
     model_config = SettingsConfigDict(

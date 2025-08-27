@@ -29,3 +29,7 @@ services:
 # Определяем именованный volume для данных Redis
 volumes:
   redis_data_prod:
+
+networks:
+  default:
+    name: gateway_network_prod
