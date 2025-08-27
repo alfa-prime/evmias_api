@@ -1,7 +1,8 @@
 # app/core/dependencies.py
 from typing import Optional
 
-from fastapi import Request, HTTPException, status, Header
+from fastapi import Request, HTTPException, status, Header, Security
+from fastapi.security import APIKeyHeader
 
 from app.core import get_settings, HTTPXClient
 from app.core.session_manager import SessionManager
@@ -29,8 +30,9 @@ async def get_http_service(request: Request) -> HTTPXClient:
         session_manager=session_manager
     )
 
+api_key_header_scheme = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
-async def get_api_key(api_key: Optional[str] = Header(None, alias="X-API-KEY")):
+async def get_api_key(api_key: Optional[str] = Security(api_key_header_scheme)):
     """
     Проверяет X-API-KEY. Теперь эта функция полностью контролирует ответ об ошибке.
     """

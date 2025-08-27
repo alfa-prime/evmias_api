@@ -1,6 +1,4 @@
 # app/core/lifespan.py
-import asyncio
-
 import httpx
 import redis.asyncio as redis
 from fastapi import FastAPI
@@ -26,7 +24,6 @@ async def init_httpx_client(app: FastAPI):
             verify=False  # TODO: убрать verify=False
         )
         app.state.http_client = base_client
-        # app.state.auth_lock = asyncio.Lock()  !!!!!
         logger.info("Base HTTPX client and auth lock initialized.")
     except Exception as e:
         logger.critical(f"CRITICAL: Failed to initialize HTTPX client: {e}", exc_info=True)
