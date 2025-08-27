@@ -1,17 +1,17 @@
-#app/route/gateway.py
+# app/route/gateway.py
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Body
 
-from app.core import HTTPXClient, get_http_service, route_handler ,get_settings, get_api_key
+from app.core import HTTPXClient, get_http_service, route_handler, get_settings, get_api_key
 from app.model.gateway import GatewayRequest
 from app.service import fetch_request
-
 
 settings = get_settings()
 router = APIRouter(prefix="/gateway", tags=["API gateway"], dependencies=[Depends(get_api_key)])
 
 
+@route_handler(debug=settings.DEBUG_ROUTE)
 @router.post(
     path="/request",
     summary="Выполнить запрос к ЕВМИАС и вернуть чистый JSON",
@@ -23,7 +23,6 @@ router = APIRouter(prefix="/gateway", tags=["API gateway"], dependencies=[Depend
       (например, из-за ошибки сессии), возвращает ошибку 502 Bad Gateway.
     """
 )
-@route_handler(debug=settings.DEBUG_ROUTE)
 async def process_request(
         request: Request,
         http_service: Annotated[HTTPXClient, Depends(get_http_service)],
