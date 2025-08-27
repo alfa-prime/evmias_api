@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     LOGS_LEVEL: str = "INFO"
     DEBUG_HTTP: bool = False
+    DEBUG_ROUTE: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",
