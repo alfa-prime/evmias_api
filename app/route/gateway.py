@@ -3,13 +3,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Body
 
-from app.core import HTTPXClient, get_http_service, route_handler ,get_settings
+from app.core import HTTPXClient, get_http_service, route_handler ,get_settings, get_api_key
 from app.model.gateway import GatewayRequest
 from app.service import fetch_request
 
 
 settings = get_settings()
-router = APIRouter(prefix="/gateway", tags=["API gateway"])
+router = APIRouter(prefix="/gateway", tags=["API gateway"], dependencies=[Depends(get_api_key)])
 
 
 @router.post(

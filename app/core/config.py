@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     DEBUG_HTTP: bool = False
     DEBUG_ROUTE: bool = False
 
+    GATEWAY_API_KEY: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
