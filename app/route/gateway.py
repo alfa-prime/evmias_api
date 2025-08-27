@@ -1,7 +1,7 @@
 #app/route/gateway.py
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Body
 
 from app.core import HTTPXClient, get_http_service, route_handler ,get_settings
 from app.model.gateway import GatewayRequest
@@ -26,8 +26,19 @@ router = APIRouter(prefix="/gateway", tags=["API gateway"])
 @route_handler(debug=settings.DEBUG_ROUTE)
 async def process_request(
         request: Request,
-        payload: GatewayRequest,
-        http_service: Annotated[HTTPXClient, Depends(get_http_service)]
+        http_service: Annotated[HTTPXClient, Depends(get_http_service)],
+        payload: GatewayRequest = Body(
+            ...,
+            example={
+                "params": {
+                    "c": "Common",
+                    "m": "getCurrentDateTime"
+                },
+                "data": {
+                    "is_activerulles": "true"
+                }
+            }
+        )
 ) -> Any:
     json_response = await fetch_request(payload, http_service)
     return json_response

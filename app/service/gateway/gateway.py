@@ -1,13 +1,12 @@
 # app/service/proxy/proxy.py
 from fastapi import HTTPException
 
-from app.core import HTTPXClient, log_and_catch, get_settings
+from app.core import HTTPXClient, get_settings
 from app.model import GatewayRequest
 
 settings = get_settings()
 
 
-@log_and_catch(debug=settings.DEBUG_HTTP)
 async def fetch_request(
         payload: GatewayRequest,
         http_client: HTTPXClient

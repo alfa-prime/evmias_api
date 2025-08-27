@@ -10,7 +10,7 @@ class RequestParams(BaseModel):
 
 class GatewayRequest(BaseModel):
     """
-    Model for universal proxy request for EVMIAS api
+    Model for gateway request for EVMIAS api
     """
     path: str = Field(
         default="/",
@@ -19,7 +19,7 @@ class GatewayRequest(BaseModel):
     )
 
     method: Literal["GET", "POST"] = Field(
-        ...,
+        default="POST",
         description="HTTP-метод, который будет использован для запроса к ЕВМИАС.",
         examples=["POST"]
     )
