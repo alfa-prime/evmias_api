@@ -1,71 +1,41 @@
-#app/service/auth/auth.py
-from app.core import HTTPXClient, get_settings
+# app/service/auth/auth.py
+from typing import Dict
+from app.core.config import get_settings
 from app.core.logger_config import logger
-from fastapi import HTTPException, status
+from fastapi import HTTPException
+from httpx import Cookies, AsyncClient
 
 settings = get_settings()
 
+async def warmup_session_and_fetch_initial_cookies(http_client: AsyncClient) -> Cookies:
+    """Получает первую часть cookie, используя 'чистый' http клиент."""
+    params = {"c": "portal", "m": "promed", "from": "promed"}
+    response = await http_client.get("/", params=params, follow_redirects=True)
+    if response.status_code != 200:
+        logger.error(f"[AUTH] Failed to fetch initial cookies, status: {response.status_code}, text: {response.text}")
+        raise HTTPException(status_code=response.status_code, detail="Failed to fetch initial cookies")
+    logger.info("[AUTH] Successfully fetched initial cookies.")
+    return response.cookies
 
-async def warmup_session_and_fetch_initial_cookies(http_client: HTTPXClient) -> None:
-    """Get first part of cookies."""
-    params = {"c": "portal", "m": "promed", "from": "promed" }
-    response = await http_client._execute_fetch( # noqa
-        url="/",
-        params=params,
-        method="GET",
-        raise_for_status=False,
-        follow_redirects=True, # Follow redirects to get the cookies
-    )
-    status_code = response.get("status_code")
-    if status_code != 200:
-        logger.error(f"[AUTH] Failed to fetch initial cookies, status code: {status_code}, text: {response}")
-        raise HTTPException(
-            status_code=status_code,
-            detail="Failed to fetch initial cookies"
-        )
-    logger.info(f"[AUTH] Successfully fetched initial cookies.")
-
-
-async def authorize_session(http_client: HTTPXClient) -> None:
-    """Authorizes the user and adds the login to cookies."""
-    params = {
-        "c": "main",
-        "m": "index",
-        "method": "Logon",
-        "login": settings.EVMIAS_LOGIN
-    }
-
-    data = {
-        "login": settings.EVMIAS_LOGIN,
-        "psw": settings.EVMIAS_PASSWORD,
-        "swUserRegion": "",
-        "swUserDBType": "",
-    }
-
-    response = await http_client._execute_fetch( # noqa
-        url="/",
-        method="POST",
-        params=params,
-        data=data,
-        raise_for_status=False,
-        follow_redirects=False,
-    )
-
-    if response['status_code'] != 200 or "true" not in response.get("text", ""):
-        logger.error(
-            f"[AUTH] Failed to authorize user, "
-            f"status code: {response['status_code']}, "
-            f"text: {response.get('text', '')}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="[AUTH] Failed to authorize user"
-        )
-
+async def authorize_session(http_client: AsyncClient, cookies: Cookies) -> Cookies:
+    """Авторизует сессию и возвращает финальный набор cookie."""
+    params = {"c": "main", "m": "index", "method": "Logon", "login": settings.EVMIAS_LOGIN}
+    data = {"login": settings.EVMIAS_LOGIN, "psw": settings.EVMIAS_PASSWORD, "swUserRegion": "", "swUserDBType": ""}
+    response = await http_client.post("/", params=params, data=data, cookies=cookies, follow_redirects=False)
+    if response.status_code != 200 or "true" not in response.text:
+        logger.error(f"[AUTH] Failed to authorize user, status: {response.status_code}, text: {response.text}")
+        raise HTTPException(status_code=response.status_code, detail="[AUTH] Failed to authorize user")
     logger.info("[AUTH] Successfully authorized user.")
+    cookies.update(response.cookies)
+    return cookies
 
-
-async def perform_re_authentication(http_client: HTTPXClient):
-    await warmup_session_and_fetch_initial_cookies(http_client)
-    await authorize_session(http_client)
-
+async def perform_re_authentication(http_client_instance) -> Dict[str, str]:
+    """
+    Оркестрирует процесс переаутентификации.
+    Принимает экземпляр нашего HTTPXClient, чтобы использовать его 'чистый' базовый http-клиент.
+    """
+    # Используем базовый httpx.AsyncClient для аутентификации, чтобы избежать рекурсивных вызовов fetch()
+    clean_http_client = http_client_instance.client
+    initial_cookies = await warmup_session_and_fetch_initial_cookies(clean_http_client)
+    final_cookies = await authorize_session(clean_http_client, initial_cookies)
+    return dict(final_cookies)

@@ -4,6 +4,7 @@ from .config import get_settings
 from .dependencies import get_http_service, get_api_key
 from .lifespan import init_httpx_client, shutdown_httpx_client, init_redis_client, shutdown_redis_client
 from .logger_config import logger
+from .session_manager import SessionManager
 
 __all__ = [
     "logger",
@@ -17,4 +18,5 @@ __all__ = [
     "get_settings",
     "route_handler",
     "log_and_catch",
+    "SessionManager"
 ]

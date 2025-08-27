@@ -26,7 +26,7 @@ async def init_httpx_client(app: FastAPI):
             verify=False  # TODO: убрать verify=False
         )
         app.state.http_client = base_client
-        app.state.auth_lock = asyncio.Lock()
+        # app.state.auth_lock = asyncio.Lock()  !!!!!
         logger.info("Base HTTPX client and auth lock initialized.")
     except Exception as e:
         logger.critical(f"CRITICAL: Failed to initialize HTTPX client: {e}", exc_info=True)
@@ -47,7 +47,7 @@ async def init_redis_client(app: FastAPI):
     try:
         redis_pool = redis.ConnectionPool.from_url(
             url=f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
-            decode_responses=False,
+            decode_responses=True,
             max_connections=10
         )
         redis_client = redis.Redis(connection_pool=redis_pool)
@@ -55,7 +55,6 @@ async def init_redis_client(app: FastAPI):
         app.state.redis_client = redis_client
         logger.info(
             f"Redis client connected to {settings.REDIS_HOST}:{settings.REDIS_PORT}"
-            f"and saved in app.state"
         )
     except Exception as e:
         logger.critical(f"CRITICAL: Failed to connect to Redis: {e}", exc_info=True)

@@ -22,8 +22,8 @@ async def lifespan(app: FastAPI):  # noqa
     logger.info("Initialization completed.")
     yield
     logger.info("Shutting down application...")
-    await shutdown_redis_client(app)
     await shutdown_httpx_client(app)
+    await shutdown_redis_client(app)
     logger.info("Resources released.")
 
 

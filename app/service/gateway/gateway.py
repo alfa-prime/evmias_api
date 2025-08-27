@@ -1,15 +1,19 @@
 # app/service/proxy/proxy.py
+from typing import TYPE_CHECKING
 from fastapi import HTTPException
 
-from app.core import HTTPXClient, get_settings
+from app.core.config import get_settings
 from app.model import GatewayRequest
+
+if TYPE_CHECKING:
+    from app.core import HTTPXClient
 
 settings = get_settings()
 
 
 async def fetch_request(
         payload: GatewayRequest,
-        http_client: HTTPXClient
+        http_client: "HTTPXClient"
 ):
     response = await http_client.fetch(
         url=payload.path,
